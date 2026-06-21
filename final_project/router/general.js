@@ -191,4 +191,51 @@ public_users.get('/async-author-await/:author', async (req, res) => {
   }
 });
 
+// Get book details based on Title using Promise callbacks
+public_users.get('/async-title/:title', (req, res) => {
+  const title = req.params.title;
+  
+  Promise.resolve(Object.keys(books))
+    .then(keys => {
+      const matched = [];
+      keys.forEach(isbn => {
+        if (books[isbn].title === title) {
+          matched.push({isbn, ...books[isbn]});
+        }
+      });
+      return matched;
+    })
+    .then(matched => {
+      if (matched.length > 0) {
+        return res.status(200).send(JSON.stringify(matched, null, 4));
+      }
+      return res.status(404).json({ message: "No books found with that title" });
+    })
+    .catch(err => {
+      return res.status(500).json({ message: "Error fetching books by title" });
+    });
+});
+
+// Get book details based on Title using async-await
+public_users.get('/async-title-await/:title', async (req, res) => {
+  try {
+    const title = req.params.title;
+    const keys = await Promise.resolve(Object.keys(books));
+    const matched = [];
+    
+    keys.forEach(isbn => {
+      if (books[isbn].title === title) {
+        matched.push({isbn, ...books[isbn]});
+      }
+    });
+    
+    if (matched.length > 0) {
+      return res.status(200).send(JSON.stringify(matched, null, 4));
+    }
+    return res.status(404).json({ message: "No books found with that title" });
+  } catch (err) {
+    return res.status(500).json({ message: "Error fetching books by title" });
+  }
+});
+
 module.exports.general = public_users;
