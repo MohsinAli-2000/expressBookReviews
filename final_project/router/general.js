@@ -144,4 +144,51 @@ public_users.get('/async-isbn-await/:isbn', async (req, res) => {
   }
 });
 
+// Get book details based on Author using Promise callbacks
+public_users.get('/async-author/:author', (req, res) => {
+  const author = req.params.author;
+  
+  Promise.resolve(Object.keys(books))
+    .then(keys => {
+      const matched = [];
+      keys.forEach(isbn => {
+        if (books[isbn].author === author) {
+          matched.push({isbn, ...books[isbn]});
+        }
+      });
+      return matched;
+    })
+    .then(matched => {
+      if (matched.length > 0) {
+        return res.status(200).send(JSON.stringify(matched, null, 4));
+      }
+      return res.status(404).json({ message: "No books found for that author" });
+    })
+    .catch(err => {
+      return res.status(500).json({ message: "Error fetching books by author" });
+    });
+});
+
+// Get book details based on Author using async-await
+public_users.get('/async-author-await/:author', async (req, res) => {
+  try {
+    const author = req.params.author;
+    const keys = await Promise.resolve(Object.keys(books));
+    const matched = [];
+    
+    keys.forEach(isbn => {
+      if (books[isbn].author === author) {
+        matched.push({isbn, ...books[isbn]});
+      }
+    });
+    
+    if (matched.length > 0) {
+      return res.status(200).send(JSON.stringify(matched, null, 4));
+    }
+    return res.status(404).json({ message: "No books found for that author" });
+  } catch (err) {
+    return res.status(500).json({ message: "Error fetching books by author" });
+  }
+});
+
 module.exports.general = public_users;
