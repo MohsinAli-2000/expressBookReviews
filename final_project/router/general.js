@@ -1,5 +1,6 @@
 const express = require('express');
 const axios = require('axios');
+const LOCAL_BASE_URL = 'http://localhost:5000';
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
@@ -92,40 +93,37 @@ public_users.get('/review/:isbn',function (req, res) {
 
 // Get the book list available in the shop using Promise callbacks
 public_users.get('/async-books', (req, res) => {
-  // Simulate async operation using Promise
-  Promise.resolve(books)
-    .then(bookData => {
-      return res.status(200).send(JSON.stringify(bookData, null, 4));
+  axios.get(`${LOCAL_BASE_URL}/`)
+    .then(response => {
+      return res.status(200).send(response.data);
     })
     .catch(err => {
-      return res.status(500).json({ message: "Error fetching books" });
+      return res.status(500).json({ message: "Error fetching books", error: err.message });
     });
 });
 
 // Get the book list available in the shop using async-await with axios
 public_users.get('/async-books-await', async (req, res) => {
   try {
-    // Simulate async data retrieval using axios-style pattern
-    const bookData = await Promise.resolve(books);
-    return res.status(200).send(JSON.stringify(bookData, null, 4));
+    const response = await axios.get(`${LOCAL_BASE_URL}/`);
+    return res.status(200).send(response.data);
   } catch (err) {
-    return res.status(500).json({ message: "Error fetching books" });
+    return res.status(500).json({ message: "Error fetching books", error: err.message });
   }
 });
 
 // Get book details based on ISBN using Promise callbacks
 public_users.get('/async-isbn/:isbn', (req, res) => {
   const isbn = req.params.isbn;
-  
-  Promise.resolve(books[isbn])
-    .then(book => {
-      if (book) {
-        return res.status(200).send(JSON.stringify(book, null, 4));
-      }
-      return res.status(404).json({ message: "Book not found" });
+  axios.get(`${LOCAL_BASE_URL}/isbn/${encodeURIComponent(isbn)}`)
+    .then(response => {
+      return res.status(200).send(response.data);
     })
     .catch(err => {
-      return res.status(500).json({ message: "Error fetching book details" });
+      if (err.response && err.response.status === 404) {
+        return res.status(404).json({ message: "Book not found" });
+      }
+      return res.status(500).json({ message: "Error fetching book details", error: err.message });
     });
 });
 
@@ -133,39 +131,28 @@ public_users.get('/async-isbn/:isbn', (req, res) => {
 public_users.get('/async-isbn-await/:isbn', async (req, res) => {
   try {
     const isbn = req.params.isbn;
-    const book = await Promise.resolve(books[isbn]);
-    
-    if (book) {
-      return res.status(200).send(JSON.stringify(book, null, 4));
-    }
-    return res.status(404).json({ message: "Book not found" });
+    const response = await axios.get(`${LOCAL_BASE_URL}/isbn/${encodeURIComponent(isbn)}`);
+    return res.status(200).send(response.data);
   } catch (err) {
-    return res.status(500).json({ message: "Error fetching book details" });
+    if (err.response && err.response.status === 404) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+    return res.status(500).json({ message: "Error fetching book details", error: err.message });
   }
 });
 
 // Get book details based on Author using Promise callbacks
 public_users.get('/async-author/:author', (req, res) => {
   const author = req.params.author;
-  
-  Promise.resolve(Object.keys(books))
-    .then(keys => {
-      const matched = [];
-      keys.forEach(isbn => {
-        if (books[isbn].author === author) {
-          matched.push({isbn, ...books[isbn]});
-        }
-      });
-      return matched;
-    })
-    .then(matched => {
-      if (matched.length > 0) {
-        return res.status(200).send(JSON.stringify(matched, null, 4));
-      }
-      return res.status(404).json({ message: "No books found for that author" });
+  axios.get(`${LOCAL_BASE_URL}/author/${encodeURIComponent(author)}`)
+    .then(response => {
+      return res.status(200).send(response.data);
     })
     .catch(err => {
-      return res.status(500).json({ message: "Error fetching books by author" });
+      if (err.response && err.response.status === 404) {
+        return res.status(404).json({ message: "No books found for that author" });
+      }
+      return res.status(500).json({ message: "Error fetching books by author", error: err.message });
     });
 });
 
@@ -173,46 +160,28 @@ public_users.get('/async-author/:author', (req, res) => {
 public_users.get('/async-author-await/:author', async (req, res) => {
   try {
     const author = req.params.author;
-    const keys = await Promise.resolve(Object.keys(books));
-    const matched = [];
-    
-    keys.forEach(isbn => {
-      if (books[isbn].author === author) {
-        matched.push({isbn, ...books[isbn]});
-      }
-    });
-    
-    if (matched.length > 0) {
-      return res.status(200).send(JSON.stringify(matched, null, 4));
-    }
-    return res.status(404).json({ message: "No books found for that author" });
+    const response = await axios.get(`${LOCAL_BASE_URL}/author/${encodeURIComponent(author)}`);
+    return res.status(200).send(response.data);
   } catch (err) {
-    return res.status(500).json({ message: "Error fetching books by author" });
+    if (err.response && err.response.status === 404) {
+      return res.status(404).json({ message: "No books found for that author" });
+    }
+    return res.status(500).json({ message: "Error fetching books by author", error: err.message });
   }
 });
 
 // Get book details based on Title using Promise callbacks
 public_users.get('/async-title/:title', (req, res) => {
   const title = req.params.title;
-  
-  Promise.resolve(Object.keys(books))
-    .then(keys => {
-      const matched = [];
-      keys.forEach(isbn => {
-        if (books[isbn].title === title) {
-          matched.push({isbn, ...books[isbn]});
-        }
-      });
-      return matched;
-    })
-    .then(matched => {
-      if (matched.length > 0) {
-        return res.status(200).send(JSON.stringify(matched, null, 4));
-      }
-      return res.status(404).json({ message: "No books found with that title" });
+  axios.get(`${LOCAL_BASE_URL}/title/${encodeURIComponent(title)}`)
+    .then(response => {
+      return res.status(200).send(response.data);
     })
     .catch(err => {
-      return res.status(500).json({ message: "Error fetching books by title" });
+      if (err.response && err.response.status === 404) {
+        return res.status(404).json({ message: "No books found with that title" });
+      }
+      return res.status(500).json({ message: "Error fetching books by title", error: err.message });
     });
 });
 
@@ -220,21 +189,13 @@ public_users.get('/async-title/:title', (req, res) => {
 public_users.get('/async-title-await/:title', async (req, res) => {
   try {
     const title = req.params.title;
-    const keys = await Promise.resolve(Object.keys(books));
-    const matched = [];
-    
-    keys.forEach(isbn => {
-      if (books[isbn].title === title) {
-        matched.push({isbn, ...books[isbn]});
-      }
-    });
-    
-    if (matched.length > 0) {
-      return res.status(200).send(JSON.stringify(matched, null, 4));
-    }
-    return res.status(404).json({ message: "No books found with that title" });
+    const response = await axios.get(`${LOCAL_BASE_URL}/title/${encodeURIComponent(title)}`);
+    return res.status(200).send(response.data);
   } catch (err) {
-    return res.status(500).json({ message: "Error fetching books by title" });
+    if (err.response && err.response.status === 404) {
+      return res.status(404).json({ message: "No books found with that title" });
+    }
+    return res.status(500).json({ message: "Error fetching books by title", error: err.message });
   }
 });
 
