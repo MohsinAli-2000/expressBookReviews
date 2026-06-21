@@ -113,4 +113,35 @@ public_users.get('/async-books-await', async (req, res) => {
   }
 });
 
+// Get book details based on ISBN using Promise callbacks
+public_users.get('/async-isbn/:isbn', (req, res) => {
+  const isbn = req.params.isbn;
+  
+  Promise.resolve(books[isbn])
+    .then(book => {
+      if (book) {
+        return res.status(200).send(JSON.stringify(book, null, 4));
+      }
+      return res.status(404).json({ message: "Book not found" });
+    })
+    .catch(err => {
+      return res.status(500).json({ message: "Error fetching book details" });
+    });
+});
+
+// Get book details based on ISBN using async-await
+public_users.get('/async-isbn-await/:isbn', async (req, res) => {
+  try {
+    const isbn = req.params.isbn;
+    const book = await Promise.resolve(books[isbn]);
+    
+    if (book) {
+      return res.status(200).send(JSON.stringify(book, null, 4));
+    }
+    return res.status(404).json({ message: "Book not found" });
+  } catch (err) {
+    return res.status(500).json({ message: "Error fetching book details" });
+  }
+});
+
 module.exports.general = public_users;
